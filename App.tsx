@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import CorporateDashboard from './components/CorporateDashboard';
 import PersonalDashboard from './components/PersonalDashboard';
-import { BriefcaseIcon, UserIcon, ChartPieIcon } from './components/icons';
+import Auth from './components/Auth';
+import { BriefcaseIcon, UserIcon, ChartPieIcon, LogoutIcon } from './components/icons';
 
 type View = 'corporate' | 'personal';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('corporate');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // FIX: Replaced JSX.Element with React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
   const NavButton = ({ view, label, icon }: { view: View; label: string; icon: React.ReactElement }) => (
@@ -23,6 +24,18 @@ const App: React.FC = () => {
       {label}
     </button>
   );
+  
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+  
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans">
@@ -35,9 +48,18 @@ const App: React.FC = () => {
                 Raseque Investimentos
               </h1>
             </div>
-            <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg">
-              <NavButton view="corporate" label="Corporativo" icon={<BriefcaseIcon className="w-5 h-5" />} />
-              <NavButton view="personal" label="Pessoal" icon={<UserIcon className="w-5 h-5" />} />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg">
+                <NavButton view="corporate" label="Corporativo" icon={<BriefcaseIcon className="w-5 h-5" />} />
+                <NavButton view="personal" label="Pessoal" icon={<UserIcon className="w-5 h-5" />} />
+              </div>
+               <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 text-slate-400 hover:bg-slate-700 hover:text-white"
+                aria-label="Sair"
+              >
+                <LogoutIcon className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </nav>

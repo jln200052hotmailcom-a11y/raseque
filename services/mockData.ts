@@ -18,10 +18,11 @@ export const mockTodos: Todo[] = [
 ];
 
 export const mockCommitments: Commitment[] = [
-  { id: 1, title: 'Reunião com a equipe de marketing', date: '2024-07-29', time: '10:00', priority: 'high' },
-  { id: 2, title: 'Almoço com investidor', date: '2024-07-29', time: '12:30', priority: 'high' },
-  { id: 3, title: 'Dentista', date: '2024-07-30', time: '15:00', priority: 'medium' },
-  { id: 4, title: 'Jantar de aniversário da Ana', date: '2024-08-02', time: '20:00', priority: 'low' },
+  { id: 1, title: 'Reunião com a equipe de marketing', date: '2024-07-29', time: '10:00', priority: 'high', category: 'Reunião' },
+  { id: 2, title: 'Almoço com investidor', date: '2024-07-29', time: '12:30', priority: 'high', category: 'Reunião' },
+  { id: 3, title: 'Dentista', date: '2024-07-30', time: '15:00', priority: 'medium', category: 'Pessoal' },
+  { id: 4, title: 'Jantar de aniversário da Ana', date: '2024-08-02', time: '20:00', priority: 'low', category: 'Pessoal' },
+  { id: 5, title: 'Pagar conta de luz', date: '2024-08-10', time: '09:00', priority: 'high', category: 'Conta a Pagar', amount: 150.75 },
 ];
 
 export const mockTransactions: Transaction[] = [

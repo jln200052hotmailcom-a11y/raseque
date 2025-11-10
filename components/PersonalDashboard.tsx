@@ -1,9 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { Todo, Commitment, Transaction } from '../types';
 import { mockTodos, mockCommitments, mockTransactions } from '../services/mockData';
-import { ClockIcon, CalendarDaysIcon, WalletIcon } from './icons';
+// FIX: Imported `BriefcaseIcon` to resolve the "Cannot find name 'BriefcaseIcon'" error.
+import { ClockIcon, CalendarDaysIcon, WalletIcon, PlusIcon, CurrencyDollarIcon, UsersIcon, TagIcon, BriefcaseIcon, ArrowUpCircleIcon, ArrowDownCircleIcon } from './icons';
 
 type PersonalTab = 'time' | 'commitments' | 'money';
 
@@ -48,11 +48,24 @@ const PersonalDashboard: React.FC = () => {
 
 const TimeManager: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>(mockTodos);
+  const [newTodoText, setNewTodoText] = useState('');
 
   const toggleTodo = (id: number) => {
     setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
   };
   
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTodoText.trim() === '') return;
+    const newTodo: Todo = {
+      id: Date.now(),
+      text: newTodoText,
+      completed: false,
+    };
+    setTodos(prev => [...prev, newTodo]);
+    setNewTodoText('');
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold text-white">Tarefas do Dia</h3>
@@ -71,12 +84,61 @@ const TimeManager: React.FC = () => {
           </li>
         ))}
       </ul>
+       <form onSubmit={handleAddTodo} className="flex gap-2 pt-4">
+        <input
+            type="text"
+            value={newTodoText}
+            onChange={(e) => setNewTodoText(e.target.value)}
+            placeholder="Adicionar nova tarefa..."
+            className="flex-grow px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        />
+        <button type="submit" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-200 bg-sky-600 hover:bg-sky-700 text-white">
+            <PlusIcon className="w-5 h-5" />
+            <span>Adicionar</span>
+        </button>
+      </form>
     </div>
   );
 };
 
 const CommitmentTracker: React.FC = () => {
-  const [commitments] = useState<Commitment[]>(mockCommitments);
+  const [commitments, setCommitments] = useState<Commitment[]>(mockCommitments);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [priority, setPriority] = useState<"low" | "medium" | "high">('medium');
+  const [category, setCategory] = useState<Commitment['category']>('Pessoal');
+  const [amount, setAmount] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !date || !time) {
+        alert("Por favor, preencha o título, data e hora.");
+        return;
+    };
+
+    const newCommitment: Commitment = {
+      id: Date.now(),
+      title,
+      date,
+      time,
+      priority,
+      category,
+      amount: category === 'Conta a Pagar' && amount ? parseFloat(amount) : undefined,
+    };
+
+    setCommitments(prev => [...prev, newCommitment].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+
+    setTitle('');
+    setDate('');
+    setTime('');
+    setPriority('medium');
+    setCategory('Pessoal');
+    setAmount('');
+    setIsFormVisible(false);
+  };
 
   const priorityClasses = {
     high: 'border-red-500 bg-red-900/30',
@@ -84,19 +146,99 @@ const CommitmentTracker: React.FC = () => {
     low: 'border-green-500 bg-green-900/30',
   };
 
+  const categoryIcons: Record<Commitment['category'], React.ReactElement> = {
+    'Reunião': <UsersIcon className="w-6 h-6 text-indigo-400" />,
+    'Pessoal': <TagIcon className="w-6 h-6 text-teal-400" />,
+    'Conta a Pagar': <CurrencyDollarIcon className="w-6 h-6 text-amber-400" />,
+    'Outro': <BriefcaseIcon className="w-6 h-6 text-slate-400" />,
+  };
+  
+  const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold text-white">Próximos Compromissos</h3>
-       <div className="space-y-3">
-        {commitments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(c => (
-          <div key={c.id} className={`flex items-start p-4 rounded-lg border-l-4 ${priorityClasses[c.priority]}`}>
-            <div className="flex-shrink-0 text-center mr-4">
-                <p className="text-sm text-slate-400">{new Date(c.date).toLocaleDateString('pt-BR', { month: 'short' })}</p>
-                <p className="text-2xl font-bold text-white">{new Date(c.date).getDate()}</p>
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-white">Próximos Compromissos</h3>
+        <button 
+            onClick={() => setIsFormVisible(!isFormVisible)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 bg-sky-600 hover:bg-sky-700 text-white"
+        >
+            <PlusIcon className="w-5 h-5" />
+            {isFormVisible ? 'Cancelar' : 'Adicionar Compromisso'}
+        </button>
+      </div>
+
+      {isFormVisible && (
+        <form onSubmit={handleSubmit} className="bg-slate-700/50 p-4 rounded-lg space-y-4">
+            <input
+                type="text"
+                placeholder="Título do compromisso"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
             </div>
-            <div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select value={priority} onChange={(e) => setPriority(e.target.value as any)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <option value="low">Prioridade Baixa</option>
+                    <option value="medium">Prioridade Média</option>
+                    <option value="high">Prioridade Alta</option>
+                </select>
+                <select value={category} onChange={(e) => setCategory(e.target.value as any)} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <option value="Pessoal">Pessoal</option>
+                    <option value="Reunião">Reunião</option>
+                    <option value="Conta a Pagar">Conta a Pagar</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+             {category === 'Conta a Pagar' && (
+                <input
+                    type="number"
+                    placeholder="Valor (ex: 150.50)"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    step="0.01"
+                />
+            )}
+            <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none">
+                Salvar Compromisso
+            </button>
+        </form>
+      )}
+
+       <div className="space-y-3">
+        {commitments.map(c => (
+          <div key={c.id} className={`flex items-center gap-4 p-4 rounded-lg border-l-4 ${priorityClasses[c.priority]}`}>
+            <div className="flex-shrink-0 bg-slate-700/50 p-2 rounded-full">
+                {categoryIcons[c.category]}
+            </div>
+            <div className="flex-grow">
                 <p className="font-semibold text-white">{c.title}</p>
                 <p className="text-sm text-slate-400">{c.time}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+                <p className="text-sm font-medium text-white">{new Date(c.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</p>
+                {c.category === 'Conta a Pagar' && c.amount != null && (
+                    <p className="text-xs font-bold text-amber-400">{formatCurrency(c.amount)}</p>
+                )}
             </div>
           </div>
         ))}
@@ -105,8 +247,15 @@ const CommitmentTracker: React.FC = () => {
   );
 };
 
+
 const BudgetTracker: React.FC = () => {
-  const [transactions] = useState<Transaction[]>(mockTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [category, setCategory] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const { totalIncome, totalExpenses, balance, expenseByCategory } = useMemo(() => {
     let income = 0;
@@ -128,9 +277,90 @@ const BudgetTracker: React.FC = () => {
   
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
+  const handleTransactionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description || !amount || !category || !date) {
+        alert("Por favor, preencha todos os campos.");
+        return;
+    }
+    const newTransaction: Transaction = {
+        id: Date.now(),
+        description,
+        amount: parseFloat(amount),
+        type,
+        category,
+        date,
+    };
+    setTransactions(prev => [newTransaction, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    setDescription('');
+    setAmount('');
+    setType('expense');
+    setCategory('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setIsFormVisible(false);
+  }
+
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-semibold text-white">Resumo Financeiro</h3>
+      <div className="flex justify-between items-center">
+          <h3 className="text-xl font-semibold text-white">Resumo Financeiro</h3>
+          <button 
+              onClick={() => setIsFormVisible(!isFormVisible)}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 bg-sky-600 hover:bg-sky-700 text-white"
+          >
+              <PlusIcon className="w-5 h-5" />
+              {isFormVisible ? 'Cancelar' : 'Nova Transação'}
+          </button>
+      </div>
+      
+      {isFormVisible && (
+        <form onSubmit={handleTransactionSubmit} className="bg-slate-700/50 p-4 rounded-lg space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                    type="text"
+                    placeholder="Descrição"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                 <input
+                    type="number"
+                    placeholder="Valor"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    step="0.01"
+                />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="bg-slate-900 border border-slate-700 rounded-md flex p-1">
+                  <button type="button" onClick={() => setType('income')} className={`flex-1 text-sm py-1 rounded ${type === 'income' ? 'bg-green-600 text-white' : 'text-slate-300'}`}>Receita</button>
+                  <button type="button" onClick={() => setType('expense')} className={`flex-1 text-sm py-1 rounded ${type === 'expense' ? 'bg-red-600 text-white' : 'text-slate-300'}`}>Despesa</button>
+               </div>
+                <input
+                    type="text"
+                    placeholder="Categoria"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white"
+                />
+            </div>
+            <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none">
+                Salvar Transação
+            </button>
+        </form>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           <div className="bg-slate-700 p-4 rounded-lg">
               <p className="text-sm text-green-400">Receitas</p>
@@ -165,6 +395,29 @@ const BudgetTracker: React.FC = () => {
               <Bar dataKey="value" fill="#0ea5e9" name="Valor"/>
             </BarChart>
           </ResponsiveContainer>
+      </div>
+
+      <div className="mt-6">
+        <h4 className="text-lg font-semibold text-white mb-4">Últimas Transações</h4>
+        <ul className="space-y-3">
+            {transactions.map(t => (
+                <li key={t.id} className="flex items-center justify-between bg-slate-700 p-3 rounded-md hover:bg-slate-600/50 transition-colors">
+                    <div className="flex items-center gap-4">
+                        {t.type === 'income' ? 
+                            <ArrowUpCircleIcon className="w-8 h-8 flex-shrink-0 text-green-500"/> :
+                            <ArrowDownCircleIcon className="w-8 h-8 flex-shrink-0 text-red-500"/>
+                        }
+                        <div>
+                            <p className="font-medium text-white">{t.description}</p>
+                            <p className="text-sm text-slate-400">{t.category} &bull; {new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                        </div>
+                    </div>
+                    <p className={`font-semibold text-lg ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                        {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
+                    </p>
+                </li>
+            ))}
+        </ul>
       </div>
 
     </div>

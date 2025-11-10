@@ -20,6 +20,8 @@ export interface Commitment {
   date: string;
   time: string;
   priority: 'low' | 'medium' | 'high';
+  category: 'Reunião' | 'Pessoal' | 'Conta a Pagar' | 'Outro';
+  amount?: number;
 }
 
 export interface Transaction {
